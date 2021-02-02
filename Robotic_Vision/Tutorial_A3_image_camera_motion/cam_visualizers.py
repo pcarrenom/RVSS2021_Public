@@ -45,14 +45,14 @@ class CamVisualizer:
         
         # Transform frustrum points to world coordinate frame using the camera extrinsics
         
-        b0 = (self.camera.T @ self.cf_b1)[:-1].flatten()
-        b1 = (self.camera.T @ self.cf_b2)[:-1].flatten()
-        b2 = (self.camera.T @ self.cf_b3)[:-1].flatten()
-        b3 = (self.camera.T @ self.cf_b0)[:-1].flatten()
-        t0 = (self.camera.T @ self.cf_t1)[:-1].flatten()
-        t1 = (self.camera.T @ self.cf_t2)[:-1].flatten()
-        t2 = (self.camera.T @ self.cf_t3)[:-1].flatten()
-        t3 = (self.camera.T @ self.cf_t0)[:-1].flatten()
+        b0 = (self.camera.pose.A @ self.cf_b1)[:-1].flatten()
+        b1 = (self.camera.pose.A @ self.cf_b2)[:-1].flatten()
+        b2 = (self.camera.pose.A @ self.cf_b3)[:-1].flatten()
+        b3 = (self.camera.pose.A @ self.cf_b0)[:-1].flatten()
+        t0 = (self.camera.pose.A @ self.cf_t1)[:-1].flatten()
+        t1 = (self.camera.pose.A @ self.cf_t2)[:-1].flatten()
+        t2 = (self.camera.pose.A @ self.cf_t3)[:-1].flatten()
+        t3 = (self.camera.pose.A @ self.cf_t0)[:-1].flatten()
         
         # Each set of four points is a single side of the Frustrum
         points = np.array([[b0,b1,t1,t0], [b1,b2,t2,t1],[b2,b3,t3,t2],[b3,b0,t0,t3]])
@@ -67,7 +67,7 @@ def next_cam_pose(frame_id, camera, num_steps, final_pose, pose_mat=False):
     """
     if num_steps == 1:
         if pose_mat:
-            camera.T = final_pose
+            camera.pose.A = final_pose
             return
         
         x,y,z,ax,ay,az = final_pose
@@ -81,7 +81,7 @@ def next_cam_pose(frame_id, camera, num_steps, final_pose, pose_mat=False):
         # TODO make neater approach for final_pose confusions
         
         # Get current camera poses
-        cx,cy,cz, cax, cay, caz = decompose_h_mat(camera.T)
+        cx,cy,cz, cax, cay, caz = decompose_h_mat(camera.pose.A)
         # Get final camera poses in list form
         if pose_mat:
             fx, fy, fz, fax, fay, faz = decompose_h_mat(final_pose)
@@ -89,9 +89,9 @@ def next_cam_pose(frame_id, camera, num_steps, final_pose, pose_mat=False):
             fx, fy, fz, fax, fay, faz = final_pose
             
         # OLD WAY BACKUP
-#         current_ax = math.degrees(math.atan2(camera.T[2,1], camera.T[2,2]))
-#         current_ay = math.degrees(math.atan2(-1*camera.T[2,0], np.sqrt(camera.T[2,1]**2 + camera.T[2,2]**2)))
-#         current_az = math.degrees(math.atan2(camera.T[1,0], camera.T[0,0]))
+#         current_ax = math.degrees(math.atan2(camera.pose.A[2,1], camera.pose.A[2,2]))
+#         current_ay = math.degrees(math.atan2(-1*camera.pose.A[2,0], np.sqrt(camera.pose.A[2,1]**2 + camera.pose.A[2,2]**2)))
+#         current_az = math.degrees(math.atan2(camera.pose.A[1,0], camera.pose.A[0,0]))
             
         # Calculate the difference between where we are and where we want to go
         # determine the size of one step given number of steps left and increase stat by step size
@@ -123,7 +123,7 @@ def next_cam_pose(frame_id, camera, num_steps, final_pose, pose_mat=False):
     rot = rotz @ roty @ rotx
 
     trans = np.array([x,y,z]).reshape(3,1)
-    camera.T = np.vstack((np.hstack((rot, trans)), np.array([0,0,0,1])))
+    camera.pose.A = np.vstack((np.hstack((rot, trans)), np.array([0,0,0,1])))
     
 def decompose_h_mat(h_mat):
     """
